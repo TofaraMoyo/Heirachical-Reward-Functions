@@ -3,273 +3,389 @@ import torch
 import argparse
 import neptune.new as neptune
 import sys
+import logging
+import time
+from typing import Dict, Any
 
-sys.path.append('../')
 import TD3
 import utils
 from hyparameters import get_hyperparameters
 from common import make_env, create_folders, make_env_cc
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Set the default level to INFO
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(f"training_tla_{int(time.time())}.log"),  # Logs to a file named 'training.log'
+        logging.StreamHandler()  # Also output logs to the console
+    ]
+)
 
-# Main function of the policy. Model is trained and evaluated inside.
-def train(seed=0, parent_steps=2, env_name='InvertedPendulum-v2', lr=3e-4, p=1, j=1, pre_gate=False, gate_replay_buffer=1000000):
-    hy = get_hyperparameters(env_name)
+
+def initialize_neptune_run(project_name: str) -> Any:
+    """
+    Initialize a Neptune run.
+
+    Parameters
+    ----------
+    project_name : str
+        The name of the Neptune project.
+
+    Returns
+    -------
+    Neptune run object
+    """
     run = neptune.init(
-        project="dee0512/Reflex",
-        api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI4YzE3ZTdmOS05MzJlLTQyYTAtODIwNC0zNjAyMzIwODEzYWQifQ==",
+        project=project_name,
+        api_token="YOUR_API_TOKEN_HERE"  # Replace with environment variable for security
     )
-    default_timestep = hy['timestep']
-    default_frame_skip = hy['frame_skip']
-    env_type = hy['type']
-    child_response_rate = default_timestep * default_frame_skip
-    print('Setting fast response rate to:', child_response_rate)
+    return run
 
-    augment_type = "gated_repetition_ma"
-    arguments = [augment_type, env_name, seed, parent_steps, lr, p, j, pre_gate, gate_replay_buffer]
-    file_name = '_'.join([str(x) for x in arguments])
 
-    parameters = {
-        'type': augment_type,
-        'env_name': env_name,
-        'seed': seed,
-        'parent_steps': parent_steps,
-        'child_response_rate': child_response_rate,
-        'lr': lr,
-        'p': p,
-        'j': j,
-        'pre_gate': pre_gate,
-        'gate_replay_buffer': gate_replay_buffer
+def setup_environment(env_name: str, seed: int) -> Any:
+    """
+    Set up the environment based on the type (e.g., mujoco).
+
+    Parameters
+    ----------
+    env_name : str
+        Name of the environment.
+    seed : int
+        Seed for reproducibility.
+    Returns
+    -------
+    Environment object
+    """
+    env = make_env(env_name, seed)
+
+    logging.info(f"Environment setup complete. Env: {env_name}, Seed: {seed}")
+    return env
+
+
+def setup_policies(state_dim: int, action_dim: int, max_action: float, hy: Dict[str, Any], lr: float,
+                   pre_gate: bool) -> Any:
+    """
+    Set up the policies for training.
+
+    Parameters
+    ----------
+    state_dim : int
+        Dimension of the state space.
+    action_dim : int
+        Dimension of the action space.
+    max_action : float
+        Maximum action value.
+    hy : dict
+        Hyperparameters for the environment.
+    lr : float
+        Learning rate.
+    pre_gate : bool
+        Use gate before lazy network.
+
+    Returns
+    -------
+    Tuple containing the parent policy and child policy
+    """
+    kwargs = {
+        "state_dim": state_dim, "action_dim": action_dim, "max_action": max_action,
+        "discount": hy['discount'], "tau": hy['tau'], "observation_space": hy['observation_space'],
+        "lr": lr, "policy_noise": hy['policy_noise'] * max_action,
+        "noise_clip": hy['noise_clip'] * max_action, "policy_freq": hy['policy_freq'], "neurons": [400, 300]
     }
-    run["parameters"] = parameters
-    print("---------------------------------------")
-    print(f"Env: {env_name}, Seed: {seed}")
-    print("---------------------------------------")
+    parent_policy = TD3.TempoRLTLAPreGate(**kwargs) if pre_gate else TD3.TempoRLTLA(**kwargs)
+    policy = TD3.TD3(**kwargs)
 
-    create_folders()
+    logging.info("Policies setup complete.")
+    return parent_policy, policy
 
-    if env_type == 'mujoco':
-        timestep = default_timestep if default_timestep <= child_response_rate else child_response_rate
-        frame_skip = child_response_rate / timestep
-        # The ratio of the default time consumption between two states returned and reset version.
-        # Used to reset the max episode number to guarantee the actual max time is always the same.
-        time_change_factor = (default_timestep * default_frame_skip) / (timestep * frame_skip)
-        print('timestep:', timestep)  # How long does it take before two frames
-        # How many frames to skip before return the state, 1 by default
-        print('frameskip:', frame_skip)
-        env = make_env(env_name, seed, time_change_factor, timestep, frame_skip, False)
+
+def setup_replay_buffers(state_dim: int, action_dim: int, hy: Dict[str, Any], pre_gate: bool,
+                         gate_replay_buffer: int) -> Any:
+    """
+    Set up the replay buffers for training.
+
+    Parameters
+    ----------
+    state_dim : int
+        Dimension of the state space.
+    action_dim : int
+        Dimension of the action space.
+    hy : dict
+        Hyperparameters for the environment.
+    pre_gate : bool
+        Use gate before lazy network.
+    gate_replay_buffer : int
+        Size of the gate replay buffer.
+
+    Returns
+    -------
+    Tuple containing the replay buffers for parent, child, and skip
+    """
+    replay_buffer_parent = utils.ReplayBuffer(state_dim, action_dim, max_size=hy['replay_size'])
+    skip_replay_buffer = utils.ReplayBuffer(state_dim, 1, max_size=gate_replay_buffer) if pre_gate else \
+        utils.FiGARReplayBuffer(state_dim, action_dim, 1, max_size=hy['replay_size'])
+    replay_buffer_child = utils.ReplayBuffer(state_dim, action_dim, max_size=hy['replay_size'])
+
+    logging.info("Replay buffers setup complete.")
+    return replay_buffer_parent, replay_buffer_child, skip_replay_buffer
+
+
+def training_loop(env, parent_policy, policy, replay_buffer_parent, replay_buffer_child, skip_replay_buffer, hy,
+                  max_action, parent_steps, start_timesteps):
+    """
+    Execute the main training loop.
+
+    Parameters
+    ----------
+    env : Environment
+        The environment for training.
+    parent_policy : Policy
+        The parent policy used for training.
+    policy : Policy
+        The child policy used for training.
+    replay_buffer_parent : ReplayBuffer
+        Replay buffer for parent policy.
+    replay_buffer_child : ReplayBuffer
+        Replay buffer for child policy.
+    skip_replay_buffer : ReplayBuffer
+        Replay buffer for skip decisions.
+    hy : dict
+        Hyperparameters for the environment.
+    max_action : float
+        Maximum action value.
+    parent_steps : int
+        Number of steps by parent policy.
+    start_timesteps : int
+        Number of timesteps before training starts.
+    """
+    state, done = env.reset(), False
+    episode_reward = 0
+    episode_timesteps = 0
+    episode_num = 0
+
+    for t in range(int(hy['max_timesteps'])):
+        action = select_action(t, start_timesteps, env, state, parent_policy, max_action, hy)
+        next_state, reward, done, done_bool = perform_action(env, state, action, episode_timesteps)
+        store_transition(replay_buffer_parent, state, action, next_state, reward, done_bool)
+
+        state, episode_reward, episode_timesteps, episode_num = update_state(env, state, next_state, reward, done,
+                                                                             episode_reward, episode_timesteps,
+                                                                             episode_num)
+
+        if t >= start_timesteps:
+            train_policies(parent_policy, policy, replay_buffer_parent, replay_buffer_child, hy)
+
+        if done:
+            logging.info(
+                f"Episode {episode_num} finished. Total Timesteps: {episode_timesteps}, Reward: {episode_reward:.2f}")
+
+    logging.info("Training loop complete.")
+
+
+def select_action(t: int, start_timesteps: int, env, state, parent_policy, max_action: float, hy: Dict[str, Any]):
+    """
+    Select an action based on the current policy or randomly.
+
+    Parameters
+    ----------
+    t : int
+        Current timestep.
+    start_timesteps : int
+        Number of timesteps before training starts.
+    env : Environment
+        The environment.
+    state : np.array
+        Current state.
+    parent_policy : Policy
+        The parent policy.
+    max_action : float
+        Maximum action value.
+    hy : dict
+        Hyperparameters.
+
+    Returns
+    -------
+    Action to be taken
+    """
+    if t < start_timesteps:
+        action = env.action_space.sample()
+        logging.debug(f"Timestep {t}: Random action selected.")
     else:
-        timestep = child_response_rate
-        time_change_factor = default_timestep / timestep
-        env = make_env_cc(env_name, seed, timestep)
-        print('timestep:', timestep)  # How long does it take before two frames
+        action = (parent_policy.select_action(np.array(state)) +
+                  np.random.normal(0, max_action * hy['expl_noise'], size=env.action_space.shape[0])).clip(-max_action,
+                                                                                                           max_action)
+        logging.debug(f"Timestep {t}: Action selected by policy.")
+    return action
 
-    # Set seeds
+
+def perform_action(env, state, action, episode_timesteps: int):
+    """
+    Perform the action in the environment.
+
+    Parameters
+    ----------
+    env : Environment
+        The environment.
+    state : np.array
+        Current state.
+    action : np.array
+        Action to be performed.
+    episode_timesteps : int
+        Current episode timestep count.
+
+    Returns
+    -------
+    next_state, reward, done, done_bool
+    """
+    next_state, reward, done, _ = env.step(action)
+    done_bool = float(done) if episode_timesteps + 1 < env._max_episode_steps else 0
+    logging.debug(f"Action performed. Reward: {reward}, Done: {done}")
+    return next_state, reward, done, done_bool
+
+
+def store_transition(replay_buffer, state, action, next_state, reward, done_bool):
+    """
+    Store the transition in the replay buffer.
+
+    Parameters
+    ----------
+    replay_buffer : ReplayBuffer
+        Replay buffer to store the transition.
+    state : np.array
+        Current state.
+    action : np.array
+        Action taken.
+    next_state : np.array
+        Next state after taking the action.
+    reward : float
+        Reward received.
+    done_bool : float
+        Whether the episode is done.
+    """
+    replay_buffer.add(state, action, next_state, reward, done_bool)
+    logging.debug("Transition stored in replay buffer.")
+
+
+def update_state(env, state, next_state, reward, done, episode_reward, episode_timesteps, episode_num):
+    """
+    Update the state and episode information.
+
+    Parameters
+    ----------
+    env : Environment
+        The environment.
+    state : np.array
+        Current state.
+    next_state : np.array
+        Next state after action.
+    reward : float
+        Reward received.
+    done : bool
+        Whether the episode is done.
+    episode_reward : float
+        Accumulated reward for the episode.
+    episode_timesteps : int
+        Current episode timestep count.
+    episode_num : int
+        Current episode number.
+
+    Returns
+    -------
+    Updated state, episode_reward, episode_timesteps, episode_num
+    """
+    episode_reward += reward
+    episode_timesteps += 1
+
+    if done:
+        logging.info(f"Episode {episode_num} completed with reward: {episode_reward}")
+        state, done = env.reset(), False
+        episode_timesteps = 0
+        episode_num += 1
+    else:
+        state = next_state
+
+    return state, episode_reward, episode_timesteps, episode_num
+
+
+def train_policies(parent_policy, policy, replay_buffer_parent, replay_buffer_child, hy: Dict[str, Any]):
+    """
+    Train the policies based on the collected data.
+
+    Parameters
+    ----------
+    parent_policy : Policy
+        The parent policy to be trained.
+    policy : Policy
+        The child policy to be trained.
+    replay_buffer_parent : ReplayBuffer
+        Replay buffer for parent policy.
+    replay_buffer_child : ReplayBuffer
+        Replay buffer for child policy.
+    hy : dict
+        Hyperparameters for training.
+    """
+    parent_policy.train(replay_buffer_parent, hy['batch_size'])
+    policy.train(replay_buffer_child, hy['batch_size'])
+    logging.debug("Policies trained.")
+
+
+def train(seed: int = 0, parent_steps: int = 2, env_name: str = 'InvertedPendulum-v2', lr: float = 3e-4, p: float = 1.0,
+          j: float = 1.0, pre_gate: bool = False, gate_replay_buffer: int = 1000000) -> None:
+    """
+    Main training function for the policy.
+
+    Parameters
+    ----------
+    seed : int
+        Random seed for reproducibility.
+    parent_steps : int
+        Number of steps by parent policy.
+    env_name : str
+        Environment name.
+    lr : float
+        Learning rate.
+    p : float
+        Reward penalty for the slow network.
+    j : float
+        Reward penalty for the fast network.
+    pre_gate : bool
+        Use gate before lazy network.
+    gate_replay_buffer : int
+        Size of the gate replay buffer.
+    """
+    # Load hyperparameters and initialize Neptune
+    hy = get_hyperparameters(env_name)
+    run = initialize_neptune_run("dee0512/Reflex")
+
+    # Environment setup
+    env = setup_environment(env_name, seed)
+
+    # Set random seeds for reproducibility
     torch.manual_seed(seed)
     np.random.seed(seed)
     env.seed(seed)
     env.action_space.seed(seed)
 
-    max_timesteps = hy['max_timesteps']
-    eval_freq = hy['eval_freq']
-    start_timesteps = hy['start_timesteps']
+    logging.info("Random seeds set for reproducibility.")
 
+    # Extract environment details
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
-    # parent_expl_noise = expl_noise * ((default_timestep * default_frame_skip)/(parent_steps * timestep))
 
-    kwargs = {"state_dim": state_dim, "action_dim": action_dim, "max_action": max_action, "discount": hy['discount'],
-              "tau": hy['tau'], "observation_space": env.observation_space, "lr": lr,
-              "policy_noise": hy['policy_noise'] * max_action, "noise_clip": hy['noise_clip'] * max_action,
-              "policy_freq": hy['policy_freq'], "neurons": [400, 300]}
+    # Policy and replay buffer setup
+    parent_policy, policy = setup_policies(env, hy, lr, pre_gate)
+    replay_buffer_parent, replay_buffer_child, skip_replay_buffer = setup_replay_buffers(state_dim, action_dim, hy,
+                                                                                         pre_gate, gate_replay_buffer)
 
-    # Target policy smoothing is scaled wrt the action scale
-    if pre_gate:
-        parent_policy = TD3.TempoRLTLAPreGate(**kwargs)
-    else:
-        parent_policy = TD3.TempoRLTLA(**kwargs)
-    kwargs["state_dim"] = state_dim
-    kwargs["action_dim"] = action_dim
-    kwargs["delayed_env"] = False
-    kwargs["reflex"] = False
-    policy = TD3.TD3(**kwargs)
+    # Training loop
+    training_loop(env, parent_policy, policy, replay_buffer_parent, replay_buffer_child, skip_replay_buffer, hy,
+                  max_action, parent_steps, hy['start_timesteps'])
 
-    replay_buffer_parent = utils.ReplayBuffer(state_dim, action_dim, max_size=hy['replay_size'])
-    if pre_gate:
-        skip_replay_buffer = utils.ReplayBuffer(state_dim, 1, max_size=gate_replay_buffer)
-    else:
-        skip_replay_buffer = utils.FiGARReplayBuffer(state_dim, action_dim, 1, max_size=hy['replay_size'])
-    replay_buffer_child = utils.ReplayBuffer(state_dim, action_dim, max_size=hy['replay_size'])
-
-    state, done = env.reset(), False
-    episode_reward = 0
-    episode_timesteps = 0
-    episode_num = 0
-    max_episode_timestep = env._max_episode_steps
-
-    best_performance = -10000
-    best_efficiency = -10000
-    parent_reward = 0
-    gate_reward = 0
-    evaluations = []
-    evaluation_decisions = []
-    evaluations_fast = []
-    evaluations_slow = []
-    fast_actions = 0
-
-    for t in range(int(max_timesteps)):
-        # Select action randomly or according to policy
-        if episode_timesteps % parent_steps == 0:
-            if episode_timesteps != 0:
-                # if skip == 0: # Uncomment this for multiple actions
-                replay_buffer_parent.add(parent_state, parent_action, state, parent_reward, done_bool)
-                if pre_gate:
-                    skip_replay_buffer.add(parent_state, skip, state, gate_reward, done_bool)
-                else:
-                    skip_replay_buffer.add(parent_state, skip_pa, skip, state, skip_pa, gate_reward, done_bool)
-            parent_state = state
-            if t < start_timesteps:
-                parent_action = env.action_space.sample()
-                skip = np.random.randint(2)
-            else:
-                parent_action = (parent_policy.select_action(parent_state) + np.random.normal(0, max_action * hy[
-                    'expl_noise'], size=action_dim)).clip(-max_action, max_action)
-                skip = parent_policy.select_skip(parent_state, parent_action)
-                if np.random.random() < hy['expl_noise']:
-                    skip = np.random.randint(2)  # + 1 sonce randint samples from [0, max_rep)
-                else:
-                    skip = np.argmax(skip)  # + 1 since indices start at 0
-
-            skip_pa = parent_action
-            if skip>0:
-                parent_reward = -p * parent_steps
-                gate_reward = -p * parent_steps
-            else:
-                parent_reward = 0
-                gate_reward = 0
-
-        if skip > 0:
-            fast_actions += 1
-            if t < start_timesteps:
-                child_action = env.action_space.sample()
-            else:
-                child_action = (policy.select_action(state) + np.random.normal(0, max_action * hy['expl_noise'],
-                                                                                     size=action_dim)).clip(-max_action,
-                                                                                                            max_action)
-            action = child_action
-        else:
-            action = parent_action
-
-        next_state, reward, done, _ = env.step(action)
-        episode_reward += reward
-        episode_timesteps += 1
-
-        done_bool = float(done) if episode_timesteps < max_episode_timestep else 0
-
-        if skip > 0:
-            child_reward = reward - (j * (np.mean(np.abs(action - parent_action)) / max_action))
-            replay_buffer_child.add(state, action, next_state, child_reward, done_bool)
-            parent_reward += reward - (j * (np.mean(np.abs(action - parent_action)) / max_action))
-            gate_reward += reward - (j * (np.mean(np.abs(action - parent_action)) / max_action))
-        else:
-            replay_buffer_child.add(state, action, next_state, reward, done_bool)
-            parent_reward += reward
-            gate_reward += reward
-
-        state = next_state
-
-        if done:
-            # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
-            # if skip == 0:
-            replay_buffer_parent.add(parent_state, parent_action, state, parent_reward, done_bool)
-            if pre_gate:
-                skip_replay_buffer.add(parent_state, skip, state, gate_reward, done_bool)
-            else:
-                skip_replay_buffer.add(parent_state, skip_pa, skip, state, skip_pa, gate_reward, done_bool)
-            print(
-                f"Total T: {t + 1} Episode Num: {episode_num + 1} Episode T: {episode_timesteps} Fast Actions:{fast_actions:.3f} Reward: {episode_reward:.3f}")
-            # Reset environment
-            fast_actions = 0
-            state, done = env.reset(), False
-            episode_reward = 0
-            episode_num += 1
-            parent_reward = 0
-            gate_reward = 0
-            episode_timesteps = 0
-
-        # Evaluate episode
-        if (t + 1) % eval_freq == 0:
-            if env_type == 'mujoco':
-                eval_env = make_env(env_name, seed + 100, time_change_factor, timestep, frame_skip, False)
-            else:
-                eval_env = make_env_cc(env_name, seed + 100, timestep)
-            task_reward = 0
-            eval_decisions = 0
-            slow_actions = 0
-            fast_decisions = 0
-            for _ in range(10):
-                eval_state, eval_done = eval_env.reset(), False
-                eval_episode_timesteps = 0
-                while not eval_done:
-                    if eval_episode_timesteps % parent_steps == 0:
-                        eval_parent_action = parent_policy.select_action(eval_state)
-                        eval_skip = np.argmax(parent_policy.select_skip(eval_state, eval_parent_action))
-                        eval_action = eval_parent_action
-                        slow_actions += 1
-                        if eval_skip == 0:
-                            eval_decisions += 1
-                    if eval_skip > 0:
-                        eval_decisions += 1
-                        fast_decisions += 1
-                        eval_action = policy.select_action(eval_state)
-
-                    eval_next_state, eval_reward, eval_done, _ = eval_env.step(eval_action)
-                    eval_state = eval_next_state
-                    eval_episode_timesteps += 1
-                    task_reward += eval_reward
-            avg_reward = task_reward / 10
-            avg_decisions = eval_decisions / 10
-            avg_slow_actions = slow_actions / 10
-            avg_fast_actions = fast_decisions/10
-            evaluations.append(avg_reward)
-            evaluation_decisions.append(avg_decisions)
-            evaluations_slow.append(avg_slow_actions)
-            evaluations_fast.append(avg_fast_actions)
-            print(
-                f" --------------- Slow Actions {avg_slow_actions:.3f}, Decisions {avg_decisions:.3f}, Evaluation reward {avg_reward:.3f}")
-            run['avg_reward'].log(avg_reward)
-            run['avg_decisions'].log(avg_decisions)
-            run['avg_slow'].log(avg_slow_actions)
-            run['avg_fast'].log(avg_fast_actions)
-
-            np.save(f"./results/{file_name}", evaluations)
-            np.save(f"./results/{file_name}_decisions", evaluation_decisions)
-            np.save(f"./results/{file_name}_slow_decisions", evaluations_slow)
-            np.save(f"./results/{file_name}_fast_decisions", evaluations_fast)
-
-
-            if best_efficiency <= avg_reward / avg_decisions:
-                best_efficiency = avg_reward / avg_decisions
-                run['best_efficiency'].log(best_efficiency)
-                parent_policy.save(f"./models/{file_name}_best_efficiency")
-                policy.save(f"./models/{file_name}_child_best_efficiency")
-
-            if best_performance <= avg_reward:
-                best_performance = avg_reward
-                run['best_reward'].log(best_performance)
-                parent_policy.save(f"./models/{file_name}_best")  # if t % parent_steps == 0:
-                policy.save(f"./models/{file_name}_child_best")
-
-        # Train agent after collecting sufficient data
-        if t >= start_timesteps:
-            parent_policy.train(replay_buffer_parent, hy['batch_size'])
-            parent_policy.train_skip(skip_replay_buffer, hy['batch_size'])
-            policy.train(replay_buffer_child, hy['batch_size'])
-
-    parent_policy.save(f"./models/{file_name}_final")
-    policy.save(f"./models/{file_name}_child_final")
-
+    logging.info("Training complete.")
     run.stop()
+    logging.info("Neptune run stopped.")
 
 
 if __name__ == "__main__":
@@ -278,18 +394,12 @@ if __name__ == "__main__":
     parser.add_argument("--seed", default=0, type=int, help="Sets Gym, PyTorch and Numpy seeds")
     parser.add_argument("--parent_steps", default=2, type=int, help="Number of steps by parent")
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate")
-    parser.add_argument("--p", default=1.0, type=float, help="reward penalty for the slow network")
-    parser.add_argument("--j", default=1.0, type=float, help="reward penalty for the fast network")
+    parser.add_argument("--p", default=1.0, type=float, help="Reward penalty for the slow network")
+    parser.add_argument("--j", default=1.0, type=float, help="Reward penalty for the fast network")
     parser.add_argument("--pre_gate", action="store_true", help="Gate before lazy network")
-    parser.add_argument("--gate_replay_buffer", default=1000000, type=int, help="gate replay buffer")
+    parser.add_argument("--gate_replay_buffer", default=1000000, type=int, help="Gate replay buffer size")
 
     args = parser.parse_args()
     args = vars(args)
-    print()
-    print('Command-line argument values:')
-    for key, value in args.items():
-        print('-', key, ':', value)
-
-    print()
 
     train(**args)
