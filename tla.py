@@ -70,8 +70,7 @@ def setup_policies(state_dim: int, action_dim: int, max_action: float, hy: Dict[
 
     Parameters
     ----------
-    state_dim : int
-        Dimension of the state space.
+
     action_dim : int
         Dimension of the action space.
     max_action : float
