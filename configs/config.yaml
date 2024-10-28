@@ -1,0 +1,22 @@
+default:
+  slow_steps: 2
+  lr: 0.0003
+  p: 1.0
+  j: 1.0
+  max_timesteps: 100000
+  eval_freq: 5000
+  start_timesteps: 1000
+  discount: 0.99
+  tau: 0.005
+  policy_noise: 0.2
+  noise_clip: 0.5
+  policy_freq: 2
+  replay_size: 1000000
+  expl_noise: 0.1
+  batch_size: 256
+
+environments:
+  Pendulum-v1:
+    slow_steps: 6
+    eval_freq: 2500
+    max_timesteps: 30000
