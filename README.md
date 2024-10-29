@@ -6,6 +6,29 @@ This repository is the official implementation of [Optimizing Attention and Cogn
 </p>
 <!-- 📋  Optional: include a graphic explaining your approach/main result, bibtex entry, link to demos, blog posts and tutorials -->
 
+
+
+
+## Requirements
+
+To install requirements:
+
+```setup
+pip install -r requirements.txt
+```
+
+## Training
+
+To train the model(s) in the paper, run this command:
+
+```train
+python main.py --env_name <environment> --seed <seed>
+```
+
+
+## Credits
+The Temporally Layered Architecture was developed by [Devdhar Patel](https://www.devdharpatel.com/) under the supervision of Prof. [Terrence Sejnowski](https://www.salk.edu/scientist/terrence-sejnowski/) and Prof. [Hava Siegelmann](https://www.cics.umass.edu/about/directory/hava-siegelmann) at UMass Amherst. 
+
 ## Citation
 
 The paper can be cited with the following bibtex entry:
@@ -25,23 +48,6 @@ The paper can be cited with the following bibtex entry:
 }
 ```
 
-
-## Requirements
-
-To install requirements:
-
-```setup
-pip install -r requirements.txt
-```
-
-## Training
-
-To train the model(s) in the paper, run this command:
-
-```train
-python main.py --env_name <environment> --seed <seed>
-```
-
 [//]: # (## Evaluation)
 
 [//]: # ()
@@ -57,27 +63,39 @@ python main.py --env_name <environment> --seed <seed>
 [//]: # ()
 [//]: # (>📋  Describe how to evaluate the trained models on benchmarks reported in the paper, give commands that produce the results &#40;section below&#41;.)
 
-## Pre-trained Models
+[//]: # (## Pre-trained Models)
 
-You can download pretrained models here:
+[//]: # ()
+[//]: # (You can download pretrained models here:)
 
-- [My awesome model](https://drive.google.com/mymodel.pth) trained on ImageNet using parameters x,y,z. 
+[//]: # ()
+[//]: # (- [My awesome model]&#40;https://drive.google.com/mymodel.pth&#41; trained on ImageNet using parameters x,y,z. )
 
->📋  Give a link to where/how the pretrained models can be downloaded and how they were trained (if applicable).  Alternatively you can have an additional column in your results table with a link to the models.
+[//]: # ()
+[//]: # (>📋  Give a link to where/how the pretrained models can be downloaded and how they were trained &#40;if applicable&#41;.  Alternatively you can have an additional column in your results table with a link to the models.)
 
-## Results
+[//]: # ()
+[//]: # (## Results)
 
-Our model achieves the following performance on :
+[//]: # ()
+[//]: # (Our model achieves the following performance on :)
 
-### [Image Classification on ImageNet](https://paperswithcode.com/sota/image-classification-on-imagenet)
+[//]: # ()
+[//]: # (### [Image Classification on ImageNet]&#40;https://paperswithcode.com/sota/image-classification-on-imagenet&#41;)
 
-| Model name         | Top 1 Accuracy  | Top 5 Accuracy |
-| ------------------ |---------------- | -------------- |
-| My awesome model   |     85%         |      95%       |
+[//]: # ()
+[//]: # (| Model name         | Top 1 Accuracy  | Top 5 Accuracy |)
 
->📋  Include a table of results from your paper, and link back to the leaderboard for clarity and context. If your main result is a figure, include that figure and link to the command or notebook to reproduce it. 
+[//]: # (| ------------------ |---------------- | -------------- |)
 
+[//]: # (| My awesome model   |     85%         |      95%       |)
 
-## Contributing
+[//]: # ()
+[//]: # (>📋  Include a table of results from your paper, and link back to the leaderboard for clarity and context. If your main result is a figure, include that figure and link to the command or notebook to reproduce it. )
 
->📋  Pick a licence and describe how to contribute to your code repository. 
+[//]: # ()
+[//]: # ()
+[//]: # (## Contributing)
+
+[//]: # ()
+[//]: # (>📋  Pick a licence and describe how to contribute to your code repository. )
