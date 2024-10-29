@@ -35,6 +35,9 @@ def load_config(config_path, env_name):
     default_config = config["default"]
     env_config = config["environments"].get(env_name, {})
 
+    if env_config is None:
+        env_config = {}
+
     # Merge configurations (environment-specific settings take precedence)
     final_config = {**default_config, **env_config}
     return final_config

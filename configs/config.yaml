@@ -20,3 +20,48 @@ environments:
     slow_steps: 6
     eval_freq: 2500
     max_timesteps: 30000
+
+  MountainCarContinuous-v0:
+    slow_steps: 11
+    max_timesteps: 500000
+    expl_noise: 0.3
+
+  LunarLanderContinuous-v2:
+    slow_steps: 12
+    start_timesteps: 10000
+    eval_freq: 2500
+    max_timesteps: 500000
+
+  InvertedPendulum-v2:
+    slow_steps: 10
+    p: 0.5
+    j: 0.5
+
+  InvertedDoublePendulum-v2:
+    slow_steps: 5
+    p: 4.5
+    j: 4.5
+
+  Hopper-v2:
+    start_timesteps: 20000
+    slow_steps: 9
+    p: 1.0
+    j: 0
+
+  Walker2d-v2:
+    start_timesteps: 20000
+    slow_steps: 7
+    p: 0.5
+    j: 0
+
+  Ant-v2:
+    start_timesteps: 20000
+    slow_steps: 3
+    p: 0.2
+    j: 0
+
+  HalfCheetah-v2:
+    start_timesteps: 20000
+    slow_steps: 3
+    p: 4.5
+    j: 0

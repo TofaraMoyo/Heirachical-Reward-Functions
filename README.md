@@ -34,27 +34,28 @@ To install requirements:
 pip install -r requirements.txt
 ```
 
->📋  Describe how to set up the environment, e.g. pip/conda/docker commands, download datasets, etc...
-
 ## Training
 
 To train the model(s) in the paper, run this command:
 
 ```train
-python train.py --input-data <path_to_data> --alpha 10 --beta 20
+python main.py --env_name <environment> --seed <seed>
 ```
 
->📋  Describe how to train the models, with example commands on how to train the models in your paper, including the full training procedure and appropriate hyperparameters.
+[//]: # (## Evaluation)
 
-## Evaluation
+[//]: # ()
+[//]: # (To evaluate my model on ImageNet, run:)
 
-To evaluate my model on ImageNet, run:
+[//]: # ()
+[//]: # (```eval)
 
-```eval
-python eval.py --model-file mymodel.pth --benchmark imagenet
-```
+[//]: # (python eval.py --model-file mymodel.pth --benchmark imagenet)
 
->📋  Describe how to evaluate the trained models on benchmarks reported in the paper, give commands that produce the results (section below).
+[//]: # (```)
+
+[//]: # ()
+[//]: # (>📋  Describe how to evaluate the trained models on benchmarks reported in the paper, give commands that produce the results &#40;section below&#41;.)
 
 ## Pre-trained Models
 
