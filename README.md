@@ -1,3 +1,5 @@
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/temporally-layered-architecture-for-efficient/continuous-control-on-pendulum-v1)](https://paperswithcode.com/sota/continuous-control-on-pendulum-v1?p=temporally-layered-architecture-for-efficient)
+
 # Temporally Layered Architecture
 
 This repository is the official implementation of [Optimizing Attention and Cognitive  Control Costs Using Temporally-Layered Architectures](https://doi.org/10.1162/neco_a_01718). 
