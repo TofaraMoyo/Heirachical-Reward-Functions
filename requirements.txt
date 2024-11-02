@@ -1,0 +1,14 @@
+ale_py==0.7.4
+Cython==0.29.30
+gym==0.21.0
+jsonpointer==3.0.0
+lxml==4.9.1
+protobuf==3.20.3
+psutil==5.9.1
+PyJWT==2.4.0
+pyrsistent==0.18.1
+pywin32==304
+rfc3987==1.3.8
+scipy==1.7.3
+torch==1.12.0+cu116
+webcolors==1.13
