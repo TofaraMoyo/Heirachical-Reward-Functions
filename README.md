@@ -56,7 +56,7 @@ Mean fast actions: 34.06
 
 You can download pretrained models on HuggingFace:
 
-- [Pendulum-v1](https://huggingface.co/devdharpatel/tla-Pendulum-v1)
+### [TLA Collection HuggingFace](https://huggingface.co/collections/devdharpatel/temporally-layered-architecture-67264440169aeaea46a57a1f)
 
 
 ## Results
