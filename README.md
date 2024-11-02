@@ -1,4 +1,7 @@
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/temporally-layered-architecture-for-efficient/continuous-control-on-pendulum-v1)](https://paperswithcode.com/sota/continuous-control-on-pendulum-v1?p=temporally-layered-architecture-for-efficient)
+ [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/temporally-layered-architecture-for-efficient/openai-gym-on-pendulum-v1)](https://paperswithcode.com/sota/openai-gym-on-pendulum-v1?p=temporally-layered-architecture-for-efficient)
+
+ [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/temporally-layered-architecture-for-efficient/openai-gym-on-mountaincarcontinuous-v0)](https://paperswithcode.com/sota/openai-gym-on-mountaincarcontinuous-v0?p=temporally-layered-architecture-for-efficient)
+
 
 # Temporally Layered Architecture
 
