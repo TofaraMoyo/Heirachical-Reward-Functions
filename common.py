@@ -1,7 +1,9 @@
 import gym
 import torch
 import os
-__all__ = ["make_env", "create_folders"]
+import yaml
+
+__all__ = ["make_env", "create_folders", "load_config"]
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -43,3 +45,22 @@ def create_folders():
 
     if not os.path.exists("./logs"):
         os.makedirs("./logs")
+
+
+def load_config(config_path, env_name):
+    with open(config_path, "r") as file:
+        config = yaml.safe_load(file)
+
+    if "default" not in config or "environments" not in config:
+        raise ValueError("Config file must have 'default' and 'environments' sections.")
+
+    # Load default and environment-specific configurations
+    default_config = config["default"]
+    env_config = config["environments"].get(env_name, {})
+
+    if env_config is None:
+        env_config = {}
+
+    # Merge configurations (environment-specific settings take precedence)
+    final_config = {**default_config, **env_config}
+    return final_config

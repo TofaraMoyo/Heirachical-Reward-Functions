@@ -6,6 +6,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Training script for TLA model.")
     parser.add_argument("--env_name", default="Pendulum-v1", help="Environment name")
     parser.add_argument("--seed", default=0, type=int, help="Sets Gym, PyTorch and Numpy seeds")
+    parser.add_argument("--eval", )
     args = parser.parse_args()
 
     run = init_neptune_run()

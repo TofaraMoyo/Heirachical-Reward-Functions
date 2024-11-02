@@ -3,8 +3,7 @@ import numpy as np
 import torch
 import model
 import utils
-from common import make_env, create_folders
-import yaml
+from common import make_env, create_folders, load_config
 from datetime import datetime
 
 logger = None
@@ -21,26 +20,6 @@ def configure_logging(env_name, seed):
         handlers=[logging.FileHandler(log_filename), logging.StreamHandler()],
     )
     return logging.getLogger(__name__)
-
-
-
-def load_config(config_path, env_name):
-    with open(config_path, "r") as file:
-        config = yaml.safe_load(file)
-
-    if "default" not in config or "environments" not in config:
-        raise ValueError("Config file must have 'default' and 'environments' sections.")
-
-    # Load default and environment-specific configurations
-    default_config = config["default"]
-    env_config = config["environments"].get(env_name, {})
-
-    if env_config is None:
-        env_config = {}
-
-    # Merge configurations (environment-specific settings take precedence)
-    final_config = {**default_config, **env_config}
-    return final_config
 
 
 def train(run, seed=0, env_name="InvertedPendulum-v2"):
