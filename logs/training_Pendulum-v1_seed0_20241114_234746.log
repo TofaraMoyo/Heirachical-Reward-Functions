@@ -1,0 +1,25 @@
+2024-11-14 23:47:46,296 - INFO - Starting training with Env: Pendulum-v1, Seed: 0
+2024-11-14 23:47:46,611 - INFO - Total T: 200 Episode Num: 1 Reward: [7.23800673]
+2024-11-14 23:47:46,612 - INFO - Total T: 200 Episode Num: 1 Reward: -1187.6584869504693
+2024-11-14 23:47:46,758 - INFO - Total T: 400 Episode Num: 2 Reward: [20.43178557]
+2024-11-14 23:47:46,759 - INFO - Total T: 400 Episode Num: 2 Reward: -1067.5808854108634
+2024-11-14 23:47:46,918 - INFO - Total T: 600 Episode Num: 3 Reward: [1.02866941]
+2024-11-14 23:47:46,919 - INFO - Total T: 600 Episode Num: 3 Reward: -1425.5226966103019
+2024-11-14 23:47:47,046 - INFO - Total T: 800 Episode Num: 4 Reward: [9.67895937]
+2024-11-14 23:47:47,047 - INFO - Total T: 800 Episode Num: 4 Reward: -1109.159366192718
+2024-11-14 23:47:47,182 - INFO - Total T: 1000 Episode Num: 5 Reward: [2.]
+2024-11-14 23:47:47,183 - INFO - Total T: 1000 Episode Num: 5 Reward: -1591.0980738497672
+2024-11-14 23:48:41,345 - INFO - Total T: 1200 Episode Num: 6 Reward: [3.13887296]
+2024-11-14 23:48:41,346 - INFO - Total T: 1200 Episode Num: 6 Reward: -1422.099635396254
+2024-11-14 23:49:35,175 - INFO - Total T: 1400 Episode Num: 7 Reward: [0.00022596]
+2024-11-14 23:49:35,177 - INFO - Total T: 1400 Episode Num: 7 Reward: -1741.7329443747851
+2024-11-14 23:50:42,140 - INFO - Total T: 1600 Episode Num: 8 Reward: [19.19615863]
+2024-11-14 23:50:42,142 - INFO - Total T: 1600 Episode Num: 8 Reward: -1615.0488718624706
+2024-11-14 23:51:38,424 - INFO - Total T: 1800 Episode Num: 9 Reward: [39.29838775]
+2024-11-14 23:51:38,425 - INFO - Total T: 1800 Episode Num: 9 Reward: -1209.1451756090012
+2024-11-14 23:52:36,285 - INFO - Total T: 2000 Episode Num: 10 Reward: [0.]
+2024-11-14 23:52:36,286 - INFO - Total T: 2000 Episode Num: 10 Reward: -1640.4296815487512
+2024-11-14 23:53:31,907 - INFO - Total T: 2200 Episode Num: 11 Reward: [0.04528262]
+2024-11-14 23:53:31,908 - INFO - Total T: 2200 Episode Num: 11 Reward: -1184.8644335237996
+2024-11-14 23:54:27,724 - INFO - Total T: 2400 Episode Num: 12 Reward: [1.76178156e-30]
+2024-11-14 23:54:27,725 - INFO - Total T: 2400 Episode Num: 12 Reward: -1330.560949828864

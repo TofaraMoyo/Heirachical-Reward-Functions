@@ -1,0 +1,11 @@
+2024-11-14 23:24:22,520 - INFO - Starting training with Env: Pendulum-v1, Seed: 0
+2024-11-14 23:24:25,873 - INFO - Total T: 200 Episode Num: 1 Reward: 0.000
+2024-11-14 23:24:25,876 - INFO - Total T: 200 Episode Num: 1 Reward: -1284.879
+2024-11-14 23:24:29,616 - INFO - Total T: 400 Episode Num: 2 Reward: 0.000
+2024-11-14 23:24:29,620 - INFO - Total T: 400 Episode Num: 2 Reward: -1415.737
+2024-11-14 23:24:32,759 - INFO - Total T: 600 Episode Num: 3 Reward: 0.000
+2024-11-14 23:24:32,763 - INFO - Total T: 600 Episode Num: 3 Reward: -1099.495
+2024-11-14 23:24:34,818 - INFO - Total T: 800 Episode Num: 4 Reward: 0.000
+2024-11-14 23:24:34,825 - INFO - Total T: 800 Episode Num: 4 Reward: -1333.192
+2024-11-14 23:24:36,219 - INFO - Total T: 1000 Episode Num: 5 Reward: 0.000
+2024-11-14 23:24:36,221 - INFO - Total T: 1000 Episode Num: 5 Reward: -1160.341

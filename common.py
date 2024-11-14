@@ -31,8 +31,8 @@ class DecisionWrapper(gym.Wrapper):
 # Make environment using its name
 def make_env(env_name, seed):
     env = gym.make(env_name)
-    env.seed(seed)
-    env.action_space.seed(seed)
+    #env.seed(seed)
+    #env.action_space.seed(seed)
     return env
 
 
