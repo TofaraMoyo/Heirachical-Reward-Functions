@@ -12,7 +12,7 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = 'mypackage'
+NAME = 'Temporally-Layered-Architecture'
 DESCRIPTION = 'My short description for my project.'
 URL = 'https://github.com/TofaraMoyo/Temporally-Layered-Architecture'
 EMAIL = 'me@example.com'
