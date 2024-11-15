@@ -64,7 +64,7 @@ def eval(env_name):
         fast_action = 0
         jerk = 0
         for _ in range(10):
-            eval_state, eval_done = eval_env.reset(), False
+            eval_state, eval_done = eval_env.reset()
             eval_episode_timesteps = 0
             prev_action = -100
 
@@ -81,8 +81,9 @@ def eval(env_name):
                     total_decisions += 1
                     eval_action = policy.select_action(eval_state)
 
-                eval_next_state, eval_reward, eval_done, _ = eval_env.step(eval_action)
+                eval_next_state, eval_reward, eval_d,tr, _ = eval_env.step(eval_action)
                 eval_state = eval_next_state
+                eval_done=(eval_d or tr)
                 eval_episode_timesteps += 1
                 if prev_action == eval_action:
                     action_reptition += 1
