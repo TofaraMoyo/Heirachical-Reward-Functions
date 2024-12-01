@@ -1,6 +1,12 @@
 import argparse
 from neptune_utils import init_neptune_run
 from train_utils import train
+from train_utils_old import train_old
+
+
+#set wether or not it trains with the new method or old
+
+New = True
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Training script for TLA model.")
@@ -11,6 +17,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     run = init_neptune_run()
-    train(run=run,
+    if New:
+        train(run=run,
+          seed=args.seed,
+          env_name=args.env_name)
+    else:
+        train_old(run=run,
           seed=args.seed,
           env_name=args.env_name)
