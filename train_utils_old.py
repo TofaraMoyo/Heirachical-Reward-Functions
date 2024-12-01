@@ -158,7 +158,7 @@ def train_loop(
     batch_size,
 ):
     slow_replay_buffer, skip_replay_buffer, fast_replay_buffer = replay_buffers
-    state, done = env.reset(), False
+    state, done = env.reset() 
     slow_state = state
     skip = 0
     episode_reward = 0
@@ -221,8 +221,9 @@ def train_loop(
             action = slow_action
 
         # Environment step
-        next_state, reward, done, _ = env.step(action)
+        next_state, reward, dw,tr, _ = env.step(action)
         episode_reward += reward
+        done = (dw or tr)
         episode_timesteps += 1
         done_bool = float(done) if episode_timesteps < max_episode_timestep else 0
 
@@ -264,7 +265,7 @@ def train_loop(
                 t,
             )
 
-            state, done = env.reset(), False
+            state, done = env.reset() 
             episode_reward = 0
             episode_num += 1
             slow_reward = 0
